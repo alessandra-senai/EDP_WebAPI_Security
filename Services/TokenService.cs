@@ -6,24 +6,43 @@ using System.Text;
 
 namespace EDP_WebAPI_Security.Services
 {
-    public class TokenService
+    public class TokenService: ITokenService
     {
-        public static string GenerateToken(Employee employee)
+        private readonly IConfiguration _config;
+
+        public TokenService(IConfiguration config)
+        {
+            _config = config;
+        }
+        public string GenerateToken(Employee employee)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("jHt8byq8Sj4PQkz5y6vEt5GfgRKxqkH8wfxaxYG4bQCd24ac4nD6rTmjz3fgqPc2gKJL5L");
+
+            var issuer = _config.GetValue<dynamic>("Jwt:Issuer");
+            var audience = _config.GetValue<dynamic>("Jwt:Audience");
+            var keyJwt = _config.GetValue<dynamic>("Jwt:Key");
+            var key = Encoding.ASCII.GetBytes(keyJwt);
+      
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[]
+                Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim("UserId", employee.Id.ToString()),
-                    new Claim(ClaimTypes.Name, employee.Name),
-                    new Claim(ClaimTypes.Role, employee.Profile.Name)
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(30),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+                new Claim("Id", Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, employee.Name),
+                new Claim(JwtRegisteredClaimNames.Email, employee.Email),
+                new Claim(ClaimTypes.Role, employee.Profile.Name),
+                new Claim(JwtRegisteredClaimNames.Jti,
+                Guid.NewGuid().ToString())
+             }),
+                Expires = DateTime.UtcNow.AddMinutes(5),
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = new SigningCredentials
+                (new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha512Signature)
+            }; 
             var token = tokenHandler.CreateToken(tokenDescriptor);
+            var jwtToken = tokenHandler.WriteToken(token); 
             return tokenHandler.WriteToken(token);
         }
     }

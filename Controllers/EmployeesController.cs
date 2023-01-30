@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace EDP_WebAPI_Security.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/employee")]
     [ApiController]
     [Authorize]
     public class EmployeesController : ControllerBase
