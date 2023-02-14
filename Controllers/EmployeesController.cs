@@ -8,19 +8,23 @@ using Microsoft.EntityFrameworkCore;
 using EDP_WebAPI_Security.Context;
 using EDP_WebAPI_Security.Models;
 using Microsoft.AspNetCore.Authorization;
+using EDP_WebAPI_Security.Dtos;
+using AutoMapper;
 
 namespace EDP_WebAPI_Security.Controllers
 {
     [Route("api/employee")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class EmployeesController : ControllerBase
     {
         private readonly RhContext _context;
+        private readonly IMapper _mapper;
 
-        public EmployeesController(RhContext context)
+        public EmployeesController(RhContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -31,7 +35,13 @@ namespace EDP_WebAPI_Security.Controllers
             {
                 return NotFound();
             }
-            return await _context.Employee.ToListAsync();
+
+            List<Employee> employee = await _context.Employee.ToListAsync();
+
+            var user = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+
+
+            return employee;
         }
 
         [HttpGet("{id}")]
@@ -83,17 +93,18 @@ namespace EDP_WebAPI_Security.Controllers
         }
 
         [HttpPost("create-employee")]
-        [Authorize(Roles = ("Administrator"))]
-        public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
+        //[Authorize(Roles = ("Administrator"))]
+        public async Task<ActionResult<Employee>> PostEmployee(FuncionarioRequest request)
         {
             if (_context.Employee == null)
             {
                 return Problem("Entity set 'RhContext.Employee'  is null.");
             }
-            _context.Employee.Add(employee);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetEmployee", new { id = employee.Id }, employee);
+            //_context.Employee.Add(_mapper.Map<Employee>(request)); 
+            //await _context.SaveChangesAsync();
+
+            return StatusCode(201);
         }
 
         [HttpDelete("delete-employee/{id}")]
